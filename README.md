@@ -1,7 +1,7 @@
 # Usage
 
 ```Py
-python al.py **filename.al**
+python al.py *filename.al*
 ```
 
 # Python code using a different syntax
