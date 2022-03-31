@@ -18,9 +18,12 @@ with open("output.py", "w") as f:
     # although im sure that there is a better way
 
 start_indenting = False
+writer = ""
+
+variables = {}
 
 with open("output.py", "a+") as f:
-    f.write("import os\nimport time\n\n")
+    writer += "import os\nimport time\n\n"
     for i in tokens:
         if len(i) > 0:
 
@@ -30,7 +33,7 @@ with open("output.py", "a+") as f:
 
 
             if i[0][:2] == "//":
-                f.write(F"## {i[1:]}\n")
+                writer += F"## {i[1:]}\n"
                 continue
 
             ################
@@ -38,9 +41,8 @@ with open("output.py", "a+") as f:
             ################
 
             if i[0][0] == "}":
-                print("END INDENT: ", i)
                 start_indenting = False ## stop indenting (for python)
-                f.write("\n")
+                writer += "\n"
                 continue
 
             ############
@@ -48,15 +50,13 @@ with open("output.py", "a+") as f:
             ############
 
             if start_indenting == True:
-                print("INDENTING: ", i)
-                f.write("\t")
+                writer += "\t"
 
             ##################
             #  START INDENT  #
             ##################
 
             if i[-1] == "{":
-                print("START INDENT: ", i)
                 start_indenting = True
                 i = i[:-1] ## remove left bracket
 
@@ -100,7 +100,7 @@ with open("output.py", "a+") as f:
                 else:
                     shown = ''.join(i[1:])
 
-                f.write(f"print({shown})\n")
+                writer += f"print({shown})\n"
                 continue
 
             ##############
@@ -108,25 +108,29 @@ with open("output.py", "a+") as f:
             ##############
 
             if i[0] == "var":
-                if i[1] == "true" or i[1] == "false":
-                    if i[1] == "true":
+                if i[3] == "true" or i[3] == "false":
+                    if i[3] == "true":
                         statement = bool(1)
-                    if i[1] == "false":
+                    if i[3] == "false":
                         statement = bool(0)
+
+                    print(temp_statement)
                 else:
-                    statement = eval("".join(i[3:]))
+                    i = [j for j in i]
+                    statement = " ".join(i[3:])
 
                 try:
                     statement = int(statement)
                 except:
-                    statement = f"'{statement}'"
+                    statement = f"{statement}"
 
                 if statement == "true":
                     statement = bool(1)
                 if statement == "false":
                     statement = bool(0)
 
-                f.write(f"{i[1]} = {statement}\n")
+                variables[i[1]] = statement
+                writer += f"{i[1]} = {statement}\n"
                 continue
 
             ###############
@@ -134,15 +138,29 @@ with open("output.py", "a+") as f:
             ###############
 
             if i[0] == "|":
-                f.write(f"def {i[1]}():\n")
+                parameters = ", ".join(i[3:])
+                writer += f"def {i[1]}({parameters}):\n"
                 continue
+
+            ################
+            #  While Loop  #
+            ################
 
             if i[0] == "while": ## 1 > 0 {
                 condition = i[1:]
                 start_indenting = True
 
                 final_condition = "".join(str(elm) for elm in condition)
-                f.write(f"while {str(final_condition)}:\n")
+                writer += f"while {str(final_condition)}:\n"
+                continue
+
+            ##############
+            #  For Loop  #
+            ##############
+
+            if i[0] == "for": ## 1 > 0 {
+                start_indenting = True
+                writer += f"for {i[1]} in {i[3]}:\n"
                 continue
 
             ###################
@@ -150,7 +168,8 @@ with open("output.py", "a+") as f:
             ##################
 
             if i[0] == ">":
-                f.write(f"{i[1]}()\n")
+                call_parameters = ", ".join(i[2:])
+                writer += f"{i[1]}({call_parameters})\n"
                 continue
 
             ########################
@@ -159,12 +178,12 @@ with open("output.py", "a+") as f:
 
             if i[0] == ">>":
                 if i[1] == "clear":
-                    f.write("\nos.system('cls')\n")
+                    writer += "os.system('cls')\n"
                     continue
 
                 if i[1] == "wait":
                     sleep_time = int(i[2])
-                    f.write(f"\ntime.sleep({sleep_time})")
+                    writer += f"time.sleep({sleep_time})\n"
                     continue
 
             ##################
@@ -174,14 +193,23 @@ with open("output.py", "a+") as f:
             if i[0] == "?":
                 condition = i[1:]
                 final_condition = "".join(str(elm) for elm in condition)
-                f.write(f"if {str(final_condition)}:\n")
+                writer += f"if {str(final_condition)}:\n"
                 continue
 
-            ###############
-            #  INCREMENT  #
-            ###############
+            ################
+            #  INC BY ONE  #
+            ################
 
             if i[0] == "++":
-                f.write(f"{i[1]} += 1")
+                writer += f"{i[1]} += 2\n"
+
+            #################
+            #  ADD MODULES  #
+            #################
+
+            if i[0] == "add":
+                writer += f"import {i[1]}\n\n"
+
+    f.write(writer)
 
 os.system("py output.py")
